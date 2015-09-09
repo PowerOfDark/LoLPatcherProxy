@@ -74,7 +74,8 @@ namespace HttpProxy
         private void ClientToServerTask(int id)
         {
             bool error = false;
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[1024];
+            byte[] toSend;
             int bytesRead = 0;
             string data, type = "", path = "", body;
             bool requestCompleted = false;
@@ -82,13 +83,13 @@ namespace HttpProxy
             Socket clientSocket = Sockets[id].Item1;
             Socket serverSocket = Sockets[id].Item2;
 
+
             while (!error)
             {
                 try
                 {
                     requestCompleted = false;
-                    buffer = new byte[8192];
-                    bytesRead = clientSocket.Receive(buffer, 8192, SocketFlags.None);
+                    bytesRead = clientSocket.Receive(buffer, 1024, SocketFlags.None);
                     if (bytesRead == 0)
                         throw new Exception();
                     buffer = Replace(buffer, Program.localhost, Program.riothost);
@@ -99,6 +100,7 @@ namespace HttpProxy
                         type = "GET";
                         data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                         path = data.Split(' ')[1];
+
                         if (File.Exists("httpd" + path))
                         {
                             type = "OVERRIDEN GET";
@@ -108,9 +110,8 @@ namespace HttpProxy
                             }
                             body = body.Replace("\r\n", "\n");
                             body = body.Replace("\n", "\r\n");
-                            buffer = GetFakeResponse(body);
-                            bytesRead = buffer.Length;
-                            clientSocket.BeginSend(buffer, 0, bytesRead, SocketFlags.None, null, null);//send back the fake request to client,
+                            toSend = GetFakeResponse(body);
+                            clientSocket.BeginSend(toSend, 0, toSend.Length, SocketFlags.None, null, null);//send back the fake request to client,
                             requestCompleted = true;//without sending anything to server
                         }
 
@@ -148,7 +149,6 @@ namespace HttpProxy
             {
                 try
                 {
-                    buffer = new byte[8192];
                     bytesRead = serverSocket.Receive(buffer, 8192, SocketFlags.None);
                     if (bytesRead == 0)
                         throw new Exception();
@@ -188,6 +188,8 @@ namespace HttpProxy
                     Socket ServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     ServerSocket.Connect(remote, remotePort);
                     Console.WriteLine("Connection to server established.");
+
+                    ClientSocket.NoDelay = true;
                     Sockets.Add(new Tuple<Socket, Socket>(ClientSocket, ServerSocket));
                     Task.Factory.StartNew(() => { ServerToClientTask(id); });
                     Task.Factory.StartNew(() => { ClientToServerTask(id); });
