@@ -21,6 +21,7 @@ namespace LoLPatcherProxy
         public string AIRVersion, GameVersion;
         public bool DisableHanders = true;
         public bool SettingsLoaded = false;
+        Dictionary<string, string> VersionDictionary = new Dictionary<string, string>();
 
         public MainForm()
         {
@@ -239,32 +240,35 @@ namespace LoLPatcherProxy
             this.PerformTask((Action)delegate
             {
                 string data = "";
-                try
+                if (VersionDictionary.Count == 0)
                 {
-                    using (WebClient wc = new WebClient())
+                    try
                     {
-                        string[] split;
-                        string tmp = wc.DownloadString($"https://raw.githubusercontent.com/PowerOfDark/LoLPatchResolver/master/output/map_{ManifestManager.Program.Realm}_{ManifestManager.Program.Region}.txt");
-                        var list = tmp.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string s in list)
+                        using (WebClient wc = new WebClient())
                         {
-                            split = s.Split(new string[] { " -> " }, StringSplitOptions.None);
-                            if (split[0] == GameVersion)
+                            string[] split;
+                            string tmp = wc.DownloadString($"https://raw.githubusercontent.com/PowerOfDark/LoLPatchResolver/master/output/map_{ManifestManager.Program.Realm}_{ManifestManager.Program.Region}.txt");
+                            var list = tmp.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (string s in list)
                             {
-                                data = split[1];
-                                break;
+                                split = s.Split(new string[] { " -> " }, StringSplitOptions.None);
+                                VersionDictionary.Add(split[0], split[1]);
                             }
                         }
-                        if (data == "")
-                            throw new Exception("No match found");
                     }
+                    catch { }
                 }
-                catch
+                if(VersionDictionary.ContainsKey(GameVersion))
+                {
+                    data = VersionDictionary[GameVersion];
+                }
+                else
                 {
                     //Do it manually
                     var p = new ManifestManager.SolutionManifest("lol_game_client_sln", GameVersion).Projects[0];
                     data = ManifestManager.Utils.GetClientVersion(p.GetReleaseManifest()) + $" ({p.Version})";
                     p = null;
+                    VersionDictionary.Add(GameVersion, data);
                 }
                 GC.Collect();
                 this.Invoke((Action)delegate
