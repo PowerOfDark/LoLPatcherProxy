@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -21,7 +15,7 @@ namespace LoLPatcherProxy
         public string AIRVersion, GameVersion;
         public bool DisableHanders = true;
         public bool SettingsLoaded = false;
-        Dictionary<string, string> VersionDictionary = new Dictionary<string, string>();
+        Dictionary<string, string> GameVersionDictionary = new Dictionary<string, string>();
 
         public MainForm()
         {
@@ -58,6 +52,8 @@ namespace LoLPatcherProxy
         {
             if (ManifestManager.Program.Region != null && ManifestManager.Program.Realm != null)
             {
+                GameVersionDictionary.Clear();
+
                 return this.PerformTask(() =>
                 {
 
@@ -186,7 +182,6 @@ namespace LoLPatcherProxy
             }
             string airpath = $"httpd/releases/{ManifestManager.Program.Realm}/projects/lol_air_client/releases/releaselisting_{ManifestManager.Program.Region}";
             string gamepath = $"httpd/releases/{ManifestManager.Program.Realm}/solutions/lol_game_client_sln/releases/releaselisting_{ManifestManager.Program.Region}";
-            string tmp;
 
             Directory.CreateDirectory(new FileInfo(airpath).Directory.FullName);
             Directory.CreateDirectory(new FileInfo(gamepath).Directory.FullName);
@@ -240,7 +235,7 @@ namespace LoLPatcherProxy
             this.PerformTask((Action)delegate
             {
                 string data = "";
-                if (VersionDictionary.Count == 0)
+                if (GameVersionDictionary.Count == 0)
                 {
                     try
                     {
@@ -252,15 +247,15 @@ namespace LoLPatcherProxy
                             foreach (string s in list)
                             {
                                 split = s.Split(new string[] { " -> " }, StringSplitOptions.None);
-                                VersionDictionary.Add(split[0], split[1]);
+                                GameVersionDictionary.Add(split[0], split[1]);
                             }
                         }
                     }
                     catch { }
                 }
-                if(VersionDictionary.ContainsKey(GameVersion))
+                if (GameVersionDictionary.ContainsKey(GameVersion))
                 {
-                    data = VersionDictionary[GameVersion];
+                    data = GameVersionDictionary[GameVersion];
                 }
                 else
                 {
@@ -268,8 +263,9 @@ namespace LoLPatcherProxy
                     var p = new ManifestManager.SolutionManifest("lol_game_client_sln", GameVersion).Projects[0];
                     data = ManifestManager.Utils.GetClientVersion(p.GetReleaseManifest()) + $" ({p.Version})";
                     p = null;
-                    VersionDictionary.Add(GameVersion, data);
+                    GameVersionDictionary.Add(GameVersion, data);
                 }
+
                 GC.Collect();
                 this.Invoke((Action)delegate
                 {

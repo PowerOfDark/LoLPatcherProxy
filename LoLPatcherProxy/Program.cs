@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -27,6 +25,12 @@ namespace LoLPatcherProxy
 
             Application.EnableVisualStyles();
             Application.Run(mf = new MainForm());
+
+            if (!Directory.Exists("httpd"))
+            {
+                MessageBox.Show("Error", "No patch specified, try again.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(-1);
+            }
 
             Console.WriteLine("You can now start the clean patcher");
             if (File.Exists("lol.launcher.admin.exe"))

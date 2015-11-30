@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,8 +15,6 @@ namespace LoLPatcherProxy
 
         public static void Interrupt(this Form f)
         {
-
-            
             Locked = false;
             f.Invoke((Action)delegate
             {
@@ -29,26 +25,26 @@ namespace LoLPatcherProxy
 
         public static Task PerformTask(this Form f, Action action)
         {
-            if(Locked)
+            if (Locked)
             {
                 action();
             }
             Locked = true;
             _title = f.Text;
             f.Invoke((Action)delegate { f.Text += " | Working..."; f.Lock(true); });
-            
+
             return _current = Task.Factory.StartNew(action).ContinueWith((t) =>
             {
                 f.Interrupt();
 
             });
 
-            
+
         }
 
         public static void Lock(this Form f, bool value)
         {
-            if(value)
+            if (value)
             {
                 if (_locked != null)
                     f.Lock(false);
@@ -77,7 +73,7 @@ namespace LoLPatcherProxy
                             {
                                 f.Invoke((Action)delegate { c.Enabled = true; });
                             }
-                            
+
                         }
                         _locked = null;
                     }
@@ -88,7 +84,10 @@ namespace LoLPatcherProxy
 
         public static void SelectItem(this ComboBox c, string item)
         {
-            c.Invoke((Action)delegate 
+            if (item == null)
+                return;
+
+            c.Invoke((Action)delegate
             {
                 c.SelectedIndex = c.Items.IndexOf(item);
             });
