@@ -32,10 +32,31 @@ namespace LoLPatcherProxy
                 Environment.Exit(-1);
             }
 
-            Console.WriteLine("You can now start the clean patcher");
+
             if (File.Exists("lol.launcher.admin.exe"))
             {
-                Process.Start("lol.launcher.admin.exe");
+                try
+                {
+                    Process.Start("lol.launcher.admin.exe");
+                }
+                catch
+                {
+                    //UAC failure... Let's try again?
+                    if(File.Exists("lol.launcher.exe"))
+                    {
+                        try
+                        {
+                            Process.Start("lol.launcher.exe");
+                        }
+                        catch
+                        {
+                            //screw this
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("You have to manually start the patcher (lol.launcher.exe)");
+                            Console.ResetColor();
+                        }
+                    }
+                }
             }
 
             SimpleProxy p = new SimpleProxy(new IPEndPoint(IPAddress.Loopback, 80), "l3cdn.riotgames.com", 80);
