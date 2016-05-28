@@ -1,0 +1,3 @@
+[submodule "LoLPatchResolver"]
+	path = LoLPatchResolver
+	url = https://github.com/PowerOfDark/LoLPatchResolver
