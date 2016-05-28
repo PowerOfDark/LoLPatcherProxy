@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
 
@@ -12,6 +13,7 @@ namespace LoLPatcherProxy
         public static byte[] localhost;
         public static byte[] riothost;
         public static int diff;
+        public static int PORT_NUMBER;
 
         public static MainForm mf;
 
@@ -21,8 +23,9 @@ namespace LoLPatcherProxy
             localhost = Encoding.UTF8.GetBytes("Host: 127.0.0.1");//http header of our tweaked patcher
             riothost = Encoding.UTF8.GetBytes("Host: l3cdn.riotgames.com");//http header needed
             diff = Math.Abs(riothost.Length - localhost.Length);
-            Console.WriteLine("Configure the patcher");
+            PORT_NUMBER = FreeTcpPort();
 
+            Console.WriteLine("Configure the patcher");
             Application.EnableVisualStyles();
             Application.Run(mf = new MainForm());
 
@@ -59,10 +62,19 @@ namespace LoLPatcherProxy
                 }
             }
 
-            SimpleProxy p = new SimpleProxy(new IPEndPoint(IPAddress.Loopback, 80), "l3cdn.riotgames.com", 80);
+            SimpleProxy p = new SimpleProxy(new IPEndPoint(IPAddress.Loopback, PORT_NUMBER), "l3cdn.riotgames.com", 80);
 
             Console.WriteLine("The end?");
             Console.ReadKey();
+        }
+
+        public static int FreeTcpPort()
+        {
+            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+            l.Start();
+            int port = ((IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop();
+            return port;
         }
     }
 }

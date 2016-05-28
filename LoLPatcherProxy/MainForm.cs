@@ -90,6 +90,17 @@ namespace LoLPatcherProxy
         {
             Task.Factory.StartNew(() =>
             {
+
+                if(File.Exists("RADS/system/"))
+
+                if(File.Exists("RADS/system/user.cfg"))
+                {
+                    using (StreamWriter sw = new StreamWriter("RADS/system/user.cfg", false))
+                    {
+                        sw.Write("disableP2P = false\r\n");
+                    }
+                }
+
                 if (File.Exists("RADS/system/system.cfg"))
                 {
                     string txt;
@@ -203,7 +214,7 @@ namespace LoLPatcherProxy
 
             using (StreamWriter sw = new StreamWriter("RADS/system/system.cfg", false))
             {
-                sw.Write($"DownloadPath = /releases/{ManifestManager.Program.Realm}\r\nDownloadURL = 127.0.0.1:80\r\nRegion = {ManifestManager.Program.Region}\r\n");
+                sw.Write($"DownloadPath = /releases/{ManifestManager.Program.Realm}\r\nDownloadURL = 127.0.0.1:{Program.PORT_NUMBER}\r\nRegion = {ManifestManager.Program.Region}\r\n");
             }
         }
 
