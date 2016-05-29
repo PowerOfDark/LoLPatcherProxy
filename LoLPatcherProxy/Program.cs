@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace LoLPatcherProxy
 {
@@ -20,10 +21,13 @@ namespace LoLPatcherProxy
         [STAThread]
         static void Main(string[] args)
         {
-            localhost = Encoding.UTF8.GetBytes("Host: 127.0.0.1");//http header of our tweaked patcher
+            if (!Directory.Exists("httpd"))
+                Directory.CreateDirectory("httpd");
+
+            PORT_NUMBER = FreeTcpPort();
+            localhost = Encoding.UTF8.GetBytes("Host: 127.0.0.1:" + PORT_NUMBER);//http header of our tweaked patcher
             riothost = Encoding.UTF8.GetBytes("Host: l3cdn.riotgames.com");//http header needed
             diff = Math.Abs(riothost.Length - localhost.Length);
-            PORT_NUMBER = FreeTcpPort();
 
             Console.WriteLine("Configure the patcher");
             Application.EnableVisualStyles();
@@ -45,7 +49,7 @@ namespace LoLPatcherProxy
                 catch
                 {
                     //UAC failure... Let's try again?
-                    if(File.Exists("lol.launcher.exe"))
+                    if (File.Exists("lol.launcher.exe"))
                     {
                         try
                         {
@@ -86,8 +90,8 @@ namespace ManifestManager
 {
     public class Program
     {
-        public static string Realm;// = "live";
-        public static string Region;// = "EUNE";
+        public static string Realm = "live";
+        public static string Region = "EUNE";
         public static string API_BASE { get { return $"http://l3cdn.riotgames.com/releases/{Program.Realm.ToLower()}/"; } }
     }
 

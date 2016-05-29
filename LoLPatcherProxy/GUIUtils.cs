@@ -12,6 +12,7 @@ namespace LoLPatcherProxy
         private static string _title;
         private static Queue<Action> _queue = new Queue<Action>();
         public static bool Locked = false;
+        public static Task Current { get { return _current; } }
 
         public static void Interrupt(this Form f)
         {
@@ -28,6 +29,7 @@ namespace LoLPatcherProxy
             if (Locked)
             {
                 action();
+                return _current;
             }
             Locked = true;
             _title = f.Text;

@@ -90,8 +90,8 @@ namespace LoLPatcherProxy
         private void ClientToServerTask(int id)
         {
             bool error = false;
-            byte[] buffer = new byte[1024];
-            byte[] toSend, body, headers;
+            byte[] buffer = new byte[2048];
+            byte[] headers;
             int bytesRead = 0;
             string data, type = "", path = "";
             bool requestCompleted = false;
@@ -105,8 +105,9 @@ namespace LoLPatcherProxy
             {
                 try
                 {
+                    buffer = new byte[2048];
                     requestCompleted = false;
-                    bytesRead = clientSocket.Receive(buffer, 1024, SocketFlags.None);
+                    bytesRead = clientSocket.Receive(buffer, 2048, SocketFlags.None);
                     if (bytesRead == 0)
                         throw new Exception();
                     buffer = Replace(buffer, Program.localhost, Program.riothost);
@@ -128,9 +129,6 @@ namespace LoLPatcherProxy
                                 fs.CopyTo(net);
                                 net.Flush();
                             }
-                            //body = body.Replace("\r\n", "\n");
-                            //body = body.Replace("\n", "\r\n");
-                            //clientSocket.BeginSend(toSend, 0, toSend.Length, SocketFlags.None, null, null);//send back the fake request to client,
                             requestCompleted = true;//without sending anything to server
                         }
 
@@ -159,7 +157,7 @@ namespace LoLPatcherProxy
         private void ServerToClientTask(int id)
         {
             bool error = false;
-            byte[] buffer = new byte[1024*64];
+            byte[] buffer = new byte[4096];
             int bytesRead = 0;
             Socket clientSocket = Sockets[id].Item1;
             Socket serverSocket = Sockets[id].Item2;
@@ -168,7 +166,8 @@ namespace LoLPatcherProxy
             {
                 try
                 {
-                    bytesRead = serverSocket.Receive(buffer, 1024*64, SocketFlags.None);
+                    buffer = new byte[4096];
+                    bytesRead = serverSocket.Receive(buffer, 4096, SocketFlags.None);
                     if (bytesRead == 0)
                         throw new Exception();
                     if (clientSocket != null)

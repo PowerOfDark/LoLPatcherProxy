@@ -37,6 +37,7 @@
             this.SaveButton = new System.Windows.Forms.Button();
             this.AIRClientGroupBox = new System.Windows.Forms.GroupBox();
             this.GameClientGroupBox = new System.Windows.Forms.GroupBox();
+            this.IgnoreAIRCheckbox = new System.Windows.Forms.CheckBox();
             this.AIRClientGroupBox.SuspendLayout();
             this.GameClientGroupBox.SuspendLayout();
             this.SuspendLayout();
@@ -129,6 +130,7 @@
             // 
             // AIRClientGroupBox
             // 
+            this.AIRClientGroupBox.Controls.Add(this.IgnoreAIRCheckbox);
             this.AIRClientGroupBox.Controls.Add(this.AirClientComboBox);
             this.AIRClientGroupBox.Controls.Add(this.AirClientVersionLabel);
             this.AIRClientGroupBox.Location = new System.Drawing.Point(9, 79);
@@ -148,6 +150,18 @@
             this.GameClientGroupBox.TabIndex = 9;
             this.GameClientGroupBox.TabStop = false;
             this.GameClientGroupBox.Text = "Game Client";
+            // 
+            // IgnoreAIRCheckbox
+            // 
+            this.IgnoreAIRCheckbox.AutoSize = true;
+            this.IgnoreAIRCheckbox.Dock = System.Windows.Forms.DockStyle.Right;
+            this.IgnoreAIRCheckbox.Location = new System.Drawing.Point(291, 16);
+            this.IgnoreAIRCheckbox.Name = "IgnoreAIRCheckbox";
+            this.IgnoreAIRCheckbox.Size = new System.Drawing.Size(150, 24);
+            this.IgnoreAIRCheckbox.TabIndex = 6;
+            this.IgnoreAIRCheckbox.Text = "Don\'t download AIR Client";
+            this.IgnoreAIRCheckbox.UseVisualStyleBackColor = true;
+            this.IgnoreAIRCheckbox.CheckedChanged += new System.EventHandler(this.IgnoreAIRCheckbox_CheckedChanged);
             // 
             // MainForm
             // 
@@ -184,5 +198,6 @@
         private System.Windows.Forms.Button SaveButton;
         private System.Windows.Forms.GroupBox AIRClientGroupBox;
         private System.Windows.Forms.GroupBox GameClientGroupBox;
+        private System.Windows.Forms.CheckBox IgnoreAIRCheckbox;
     }
 }

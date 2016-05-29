@@ -5,7 +5,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Linq;
 
 namespace LoLPatcherProxy
 {
@@ -15,6 +15,7 @@ namespace LoLPatcherProxy
         public string AIRVersion, GameVersion;
         public bool DisableHanders = true;
         public bool SettingsLoaded = false;
+        public bool IgnoreAIRClient = false;
         Dictionary<string, string> GameVersionDictionary = new Dictionary<string, string>();
 
         public MainForm()
@@ -37,6 +38,7 @@ namespace LoLPatcherProxy
                 this.AirClientComboBox.Enabled = false;
                 this.GameClientComboBox.Enabled = false;
                 RegionComboBox.Show();
+                //RegionComboBox_SelectedIndexChanged(sender, e);
             }
         }
 
@@ -87,17 +89,17 @@ namespace LoLPatcherProxy
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
-        {
+        { 
+            IgnoreAIRCheckbox.Checked = File.Exists("httpd/IGNORE_AIR");
+
             Task.Factory.StartNew(() =>
             {
 
-                if(File.Exists("RADS/system/"))
-
-                if(File.Exists("RADS/system/user.cfg"))
+                if (File.Exists("RADS/system/user.cfg"))
                 {
                     using (StreamWriter sw = new StreamWriter("RADS/system/user.cfg", false))
                     {
-                        sw.Write("disableP2P = false\r\n");
+                        sw.Write("disableP2P = true\r\n");
                     }
                 }
 
@@ -122,6 +124,17 @@ namespace LoLPatcherProxy
                             AIRVersion = sr.ReadLine();
                         }
                     }
+                    else if (Directory.Exists("RADS/projects/lol_air_client/releases"))
+                    {
+                        AIRVersion = new DirectoryInfo("RADS/projects/lol_air_client/release").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+                    }
+                    else
+                    {
+                        //By default, set it to 4.20 and IGNORE for IntWars purposes
+                        AIRVersion = "0.0.1.119";
+                        IgnoreAIRClient = true;
+                    }
+
 
                     string gamepath = $"httpd/releases/{ManifestManager.Program.Realm}/solutions/lol_game_client_sln/releases/releaselisting_{ManifestManager.Program.Region}";
                     if (File.Exists(gamepath))
@@ -130,6 +143,15 @@ namespace LoLPatcherProxy
                         {
                             GameVersion = sr.ReadLine();
                         }
+                    }
+                    else if (Directory.Exists("RADS/solutions/lol_game_client_sln/releases"))
+                    {
+                        GameVersion = new DirectoryInfo("RADS/solutions/lol_game_client_sln/releases").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+                    }
+                    else
+                    {
+                        //By default, set it to 4.20 for IntWars purposes
+                        GameVersion = "0.0.1.68";
                     }
 
 
@@ -142,6 +164,10 @@ namespace LoLPatcherProxy
 
         private void LoadSettings()
         {
+            IgnoreAIRCheckbox.Invoke((Action)delegate
+            {
+                IgnoreAIRCheckbox.Checked = IgnoreAIRClient;
+            });
             RealmComboBox.SelectItem(ManifestManager.Program.Realm);
             if (ManifestManager.Program.Region != null)
             {
@@ -183,45 +209,55 @@ namespace LoLPatcherProxy
 
         public void SaveSettings()
         {
-            if (Directory.Exists("httpd"))
-            {
-                try
-                {
-                    RecursiveDelete(new DirectoryInfo("httpd"));
-                }
-                catch { }
-            }
-            string airpath = $"httpd/releases/{ManifestManager.Program.Realm}/projects/lol_air_client/releases/releaselisting_{ManifestManager.Program.Region}";
-            string gamepath = $"httpd/releases/{ManifestManager.Program.Realm}/solutions/lol_game_client_sln/releases/releaselisting_{ManifestManager.Program.Region}";
+            PatcherUtils.SetVersion(PatcherUtils.RELEASE.PROJECT, "lol_air_client", AIRVersion);
+            PatcherUtils.SetVersion(PatcherUtils.RELEASE.SOLUTION, "lol_game_client_sln", GameVersion);
 
-            Directory.CreateDirectory(new FileInfo(airpath).Directory.FullName);
-            Directory.CreateDirectory(new FileInfo(gamepath).Directory.FullName);
-            using (StreamWriter sw = new StreamWriter(airpath, false))
-            {
-                for (int i = AIRVersions.IndexOf(AIRVersion); i < AIRVersions.Count; i++)
-                {
-                    sw.WriteLine(AIRVersions[i]);
-                }
-            }
-
-            using (StreamWriter sw = new StreamWriter(gamepath, false))
-            {
-                for (int i = GameVersions.IndexOf(GameVersion); i < GameVersions.Count; i++)
-                {
-                    sw.WriteLine(GameVersions[i]);
-                }
-            }
+            /* Uncomment if a new patcher isn't compatible */
+            //PatcherUtils.SetVersion(PatcherUtils.RELEASE.PROJECT, "lol_patcher", "0.0.0.50");
 
             using (StreamWriter sw = new StreamWriter("RADS/system/system.cfg", false))
             {
                 sw.Write($"DownloadPath = /releases/{ManifestManager.Program.Realm}\r\nDownloadURL = 127.0.0.1:{Program.PORT_NUMBER}\r\nRegion = {ManifestManager.Program.Region}\r\n");
             }
+
+            string AIRConfig = "lol_air_client_config";
+            if(ManifestManager.Program.Realm == "live")
+            {
+                AIRConfig += $"_{ManifestManager.Program.Region.ToLower()}";
+            }
+            using (StreamWriter sw = new StreamWriter("RADS/system/launcher.cfg", false))
+            {
+                sw.Write($"airConfigProject = {AIRConfig}\r\nairProject = lol_air_client\r\ngameProject = lol_game_client_sln\r\ninstallation_id = /FFGmQ==\r\n");
+            }
+
+                if (IgnoreAIRClient)
+                    this.PerformTask(() => PatcherUtils.FakeProjectOK("lol_air_client", AIRVersion));
         }
 
         private void SaveButton_Click(object sender, EventArgs e)
         {
             SaveSettings();
-            Application.Exit();
+            if (GUIUtils.Current != null)
+                GUIUtils.Current.ContinueWith((t) => Application.Exit());
+            else
+                Application.Exit();
+        }
+
+        private void IgnoreAIRCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            IgnoreAIRClient = IgnoreAIRCheckbox.Checked;
+            try
+            {
+                if (IgnoreAIRClient)
+                {
+                    File.Create("httpd/IGNORE_AIR").Close();
+                }
+                else
+                {
+                    File.Delete("httpd/IGNORE_AIR");
+                }
+            }
+            catch { }
         }
 
         private void AirClientComboBox_SelectedIndexChanged(object sender, EventArgs e)
