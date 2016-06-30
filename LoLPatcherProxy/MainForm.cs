@@ -12,7 +12,7 @@ namespace LoLPatcherProxy
     public partial class MainForm : Form
     {
         public List<string> AIRVersions, GameVersions;
-        public string AIRVersion, GameVersion;
+        public string AIRVersion, GameVersion, InstalledAIRVersion, InstalledGameVersion;
         public bool DisableHanders = true;
         public bool SettingsLoaded = false;
         public bool IgnoreAIRClient = false;
@@ -91,6 +91,18 @@ namespace LoLPatcherProxy
         private void MainForm_Shown(object sender, EventArgs e)
         { 
             IgnoreAIRCheckbox.Checked = File.Exists("httpd/IGNORE_AIR");
+            try
+            {
+                InstalledAIRVersion = new DirectoryInfo("RADS/projects/lol_air_client/release").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+            }
+            catch { }
+
+            try
+            {
+                InstalledGameVersion = new DirectoryInfo("RADS/solutions/lol_game_client_sln/releases").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+            }
+            catch { }
+            this.Text += $"| AIR: {InstalledAIRVersion} | GAME: {InstalledGameVersion}";
 
             Task.Factory.StartNew(() =>
             {
@@ -126,7 +138,7 @@ namespace LoLPatcherProxy
                     }
                     else if (Directory.Exists("RADS/projects/lol_air_client/releases"))
                     {
-                        AIRVersion = new DirectoryInfo("RADS/projects/lol_air_client/release").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+                        AIRVersion = InstalledAIRVersion;
                     }
                     else
                     {
@@ -146,7 +158,7 @@ namespace LoLPatcherProxy
                     }
                     else if (Directory.Exists("RADS/solutions/lol_game_client_sln/releases"))
                     {
-                        GameVersion = new DirectoryInfo("RADS/solutions/lol_game_client_sln/releases").GetDirectories().OrderByDescending(t => int.Parse(t.Name.Replace(".", ""))).FirstOrDefault()?.Name;
+                        GameVersion = InstalledGameVersion;
                     }
                     else
                     {
@@ -237,6 +249,28 @@ namespace LoLPatcherProxy
         private void SaveButton_Click(object sender, EventArgs e)
         {
             SaveSettings();
+            if(InstalledAIRVersion != null)
+            {
+                if(int.Parse(InstalledAIRVersion.Replace(".", "")) > int.Parse(AIRVersion.Replace(".", "")))
+                {
+                    try
+                    {
+                        File.Delete($"RADS/projects/lol_air_client/releases/{InstalledAIRVersion}/S_OK");
+                    }
+                    catch { }
+                }
+            }
+            if (InstalledGameVersion != null)
+            {
+                if (int.Parse(InstalledGameVersion.Replace(".", "")) > int.Parse(GameVersion.Replace(".", "")))
+                {
+                    try
+                    {
+                        File.Delete($"RADS/solutions/lol_game_client_sln/releases/{InstalledGameVersion}/S_OK");
+                    }
+                    catch { }
+                }
+            }
             if (GUIUtils.Current != null)
                 GUIUtils.Current.ContinueWith((t) => Application.Exit());
             else
@@ -282,7 +316,7 @@ namespace LoLPatcherProxy
             this.PerformTask((Action)delegate
             {
                 string data = "";
-                if (GameVersionDictionary.Count == 0)
+                if (GameVersionDictionary.Count == 0 && false)
                 {
                     try
                     {
